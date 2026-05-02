@@ -22,6 +22,13 @@ weights/
 *.bin
 *.safetensors
 
+# External assets (music, LUTs) — fetched via scripts/fetch_assets.sh
+assets/music/
+assets/luts/
+*.mp3
+*.cube
+*.beats.json
+
 .env
 .env.*
 !.env.example
