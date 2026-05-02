@@ -1,0 +1,109 @@
+# ============================================================
+# videoAutoCut — default config
+# ============================================================
+
+project:
+  name: videoAutoCut
+  output_target: vlog_3min          # vlog_3min | short_30s | short_60s
+
+# ---- Ingest ----
+ingest:
+  analysis_fps: 2                   # frames per second for analysis pass
+  jpeg_quality: 2                   # ffmpeg -q:v (1 = best, 31 = worst)
+  resize_long_edge: 720             # downscale analysis frames; 0 = no resize
+  keep_original_for_render: true
+
+# ---- Shot segmentation ----
+shots:
+  detector: pyscenedetect            # pyscenedetect | transnetv2 | hybrid
+  pyscenedetect:
+    threshold: 27.0                  # ContentDetector threshold
+    min_scene_len_seconds: 1.0
+  transnetv2:
+    enabled: true                    # GPU refine pass
+    confidence_threshold: 0.5
+  min_shot_seconds: 1.2
+  max_shot_seconds: 8.0
+
+# ---- Per-shot scoring ----
+scoring:
+  weights:
+    aesthetic: 0.40
+    semantic:  0.35
+    voice:     0.15
+    shake_penalty: 0.10
+  aesthetic:
+    backbone: ViT-L/14               # GPU available — use Large
+    predictor: laion_improved        # improved-aesthetic-predictor weights
+  semantic:
+    model: chinese-clip-vit-large-patch14
+    prompt_bank_files:
+      - prompts/scenery.zh.txt
+    aggregate: max                    # max | mean of cosine sims
+  shake:
+    method: optical_flow_farneback
+    threshold_magnitude: 6.0         # px / frame, normalized
+  diversity:
+    embedding_distance_min: 0.18
+
+# ---- Voice branch ----
+voice:
+  vad:
+    model: silero-vad
+    speech_pad_ms: 200
+    min_speech_ms: 400
+  asr:
+    backend: whisperx                # uses faster-whisper
+    model_size: large-v3
+    language: zh
+    compute_type: float16
+  rater:
+    provider: qwen                    # qwen (DashScope) | claude
+    model: qwen-plus                  # qwen-turbo for cheap, qwen-plus for quality
+    prompt: |
+      你是 vlog 剪辑助理。判断下面这段口播是否值得保留为 vlog 高光片段。
+      评分 1–10,只返回数字。优先保留:观点鲜明、情绪饱满、有信息密度的句子。
+      过滤:口头语、含糊、机械记账式描述。
+
+# ---- Selection ----
+select:
+  target_total_seconds: 180          # 3-minute vlog
+  target_shot_count_range: [25, 45]
+  diversity_penalty_lambda: 0.25
+  ensure_voice_coverage_seconds: 30  # at least N seconds of rated voice
+
+# ---- Assembly ----
+assemble:
+  beat_snap:
+    enabled: true
+    tolerance_ms: 150
+  transitions:
+    default: cut                     # cut | crossfade
+    crossfade_ms: 200
+  ducking:                            # voice-aware music ducking
+    enabled: true
+    voice_db: -3
+    music_db: -16
+
+# ---- Background music generation ----
+music:
+  generator: musicgen-small          # musicgen-small | musicgen-medium | external
+  duration_seconds: 200              # slightly > clip length, then trim
+  sample_rate: 32000
+  prompt_default: "soft cinematic travel vlog background, warm acoustic guitar, gentle pads, light percussion, no vocals"
+  prompt_overrides_by_scene:
+    城市夜景: "lo-fi night city beat, soft synth, mellow"
+    山景: "expansive cinematic ambient, strings, airy"
+    美食: "playful ukulele, light bell, upbeat travel"
+  cache_dir: output/_music_cache
+
+# ---- Export ----
+export:
+  ladders:
+    - { name: "vertical_9x16", width: 1080, height: 1920, label: "douyin_xhs" }
+    - { name: "horizontal_16x9", width: 1920, height: 1080, label: "youtube" }
+  video_codec: libx264
+  crf: 18
+  audio_codec: aac
+  audio_bitrate: 192k
+  burn_in_subtitles: true

@@ -1,0 +1,65 @@
+# ============================================================
+# videoAutoCut — pinned dependencies
+#
+# GPU build: install torch first via the PyTorch index, then the
+# rest from PyPI. CUDA 12.1 wheels (works on CUDA 12.1–12.4 drivers).
+#
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
+#
+# CPU-only fallback: drop the --extra-index-url flag (will pull
+# CPU torch from PyPI).
+# ============================================================
+
+# ---- Core video / IO ----
+ffmpeg-python>=0.2.0
+moviepy>=1.0.3
+opencv-python>=4.10
+pillow>=10.0
+
+# ---- Numerical / utils ----
+numpy>=1.26,<3
+scipy>=1.13
+scikit-learn>=1.4
+tqdm>=4.66
+click>=8.1
+pyyaml>=6.0
+numba>=0.59
+
+# ---- Shot segmentation ----
+scenedetect[opencv]>=0.6.4
+# TransNetV2 has no PyPI release; install from source manually:
+#   pip install git+https://github.com/soCzech/TransNetV2.git
+# (optional, GPU refine pass)
+
+# ---- Vision models (CLIP family) ----
+torch>=2.2,<2.6
+torchvision>=0.17
+torchaudio>=2.2
+open_clip_torch>=2.24
+# Chinese-CLIP (HF model loaded via transformers; no separate package needed)
+transformers>=4.40
+huggingface_hub>=0.23
+safetensors>=0.4
+
+# ---- Aesthetic predictor (LAION MLP on CLIP ViT-L/14) ----
+# Tiny MLP; weights downloaded at runtime. No package required.
+
+# ---- Voice branch ----
+silero-vad>=5.1
+faster-whisper>=1.0.3
+whisperx>=3.1.5
+# Qwen / DashScope SDK for utterance rating
+dashscope>=1.20
+# Anthropic SDK kept as fallback rater
+anthropic>=0.40
+
+# ---- Audio / beat-snap ----
+librosa>=0.10
+soundfile>=0.12
+
+# ---- Music generation (background score) ----
+# MusicGen-small via audiocraft. Pulls torchaudio + xformers transitively.
+audiocraft>=1.3.0
+
+# ---- Dev / typing ----
+typing_extensions>=4.10

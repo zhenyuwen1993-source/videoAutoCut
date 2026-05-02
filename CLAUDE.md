@@ -44,12 +44,41 @@ prompts/         — Chinese prompt banks for semantic scoring
 configs/         — scoring weights, target durations
 ```
 
-## Decisions to revisit when user provides footage
+## Locked-in decisions (2026-05-02)
 
-- GPU available? → if no, swap ViT-L for ViT-B and skip TransNetV2
-- Whisper LLM rater: Qwen (DashScope key) or Claude API?
-- Output format priority: short (30s) or long-form (3min vlog)?
-- Music library: user-supplied, or fetch from Pixabay/uppbeat?
+- **GPU**: available — use **ViT-L/14** for both aesthetic predictor and Chinese-CLIP semantic scoring. **TransNetV2 enabled** as the GPU refine pass after PySceneDetect.
+- **Voice utterance rater**: **Qwen via DashScope** (default `qwen-plus`). Reason: native Chinese, low cost, sufficient for "rate 1–10" scoring. `anthropic` Claude SDK is wired in as a fallback rater (switch via `configs/default.yaml::voice.rater.provider`).
+- **Output target**: **3-minute vlog** is the priority format. `select.target_total_seconds: 180`, target shot count 25–45. Short formats (30s/60s) are derived later from the same EDL.
+- **Background music**: **generated locally**, not fetched from libraries.
+  - Initial engine: **Meta MusicGen-small** via the `audiocraft` package. Rationale: runs locally on the same GPU, MIT-friendly, simple API, ~3GB VRAM, ~30 s synthesis for a 200 s track. Quality is acceptable for vlog beds.
+  - Prompt strategy: a default cinematic/acoustic prompt + per-scene-cluster overrides keyed on the dominant Chinese semantic tag (see `configs/default.yaml::music.prompt_overrides_by_scene`).
+  - **TODO**: evaluate Stable Audio Open and ACE-Step as upgrade paths once the MVP runs end-to-end.
+
+## Config
+
+- All tunables live in `configs/default.yaml`.
+- Chinese semantic prompt bank: `prompts/scenery.zh.txt`.
+- Raw footage: `input/` (gitignored). Renders + manifests: `output/` (gitignored).
+- Dependencies pinned in `requirements.txt` and `pyproject.toml`. GPU torch via `--extra-index-url https://download.pytorch.org/whl/cu121`.
+
+## Implementation status
+
+- [x] Project skeleton, .venv, packaging files
+- [x] `configs/default.yaml`, `prompts/scenery.zh.txt`
+- [x] `src/ingest/` — ffmpeg frame extraction at 2 fps + CLI
+- [x] `src/shots/` — PySceneDetect wrapper + min-duration merge + optional TransNetV2 refine + CLI
+- [ ] `src/scoring/` — aesthetic + Chinese-CLIP semantic + shake
+- [ ] `src/voice/` — Silero VAD + WhisperX + Qwen rater
+- [ ] `src/select/` — greedy top-N with diversity, 3-min target
+- [ ] `src/assemble/` — moviepy/ffmpeg concat + librosa beat-snap + ducking
+- [ ] `src/export/` — 9:16 + 16:9 ladder, subtitle burn-in
+- [ ] Background-music branch — MusicGen-small integration
+
+## Decisions to revisit later
+
+- MusicGen → Stable Audio Open / ACE-Step swap once footage is in
+- Whether TransNetV2 actually adds value over PySceneDetect alone (ablate after first batch)
+- Whether `qwen-turbo` is good enough vs `qwen-plus` (cost vs quality)
 
 ## Things explicitly NOT in scope
 

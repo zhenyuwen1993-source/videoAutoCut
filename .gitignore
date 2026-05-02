@@ -1,13 +1,17 @@
 .claude/settings.local.json
 
 .venv/
+.venv-clip/
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+logs/
 
-input/
-output/
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
 *.mp4
 *.mov
 *.MOV

@@ -1,0 +1,15 @@
+# Phase 2 — CLIP-based media indexer (.venv-clip, Python 3.12)
+#
+# Install:
+#   bash scripts/run_phase2.sh         # one-shot (recommended)
+# or:
+#   py -3.12 -m venv .venv-clip
+#   .venv-clip/Scripts/python -m pip install torch torchvision \
+#       --index-url https://download.pytorch.org/whl/cu121
+#   .venv-clip/Scripts/python -m pip install -r requirements-clip.txt
+
+open_clip_torch
+pillow
+
+# torch + torchvision NOT pinned here — install via PyTorch CUDA index URL
+# above to get GPU wheels. Pinning here would pull CPU wheels from PyPI.
