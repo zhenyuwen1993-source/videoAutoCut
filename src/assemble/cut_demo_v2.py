@@ -100,7 +100,9 @@ def normalize_segment(cut: Cut, idx: int, dst: Path) -> None:
         filter_complex = (
             f"[0:v]{pre},split=2[base][togr];"
             f"[togr]lut3d=file={lut_rel}[graded];"
-            f"[base][graded]blend=all_mode=normal:all_opacity={LUT_STRENGTH},{post}[vout]"
+            f"[base][graded]blend=all_mode=normal:all_opacity={LUT_STRENGTH},{post},"
+        f"scale=in_range=full:out_range=tv:flags=accurate_rnd+full_chroma_int,"
+        f"format=yuv420p[vout]"
         )
         af = (
             f"afade=t=in:st=0:d=0.05,"
@@ -126,7 +128,9 @@ def normalize_segment(cut: Cut, idx: int, dst: Path) -> None:
             f"{pre},"
             "curves=preset=increase_contrast,"
             "eq=saturation=1.12:gamma=0.97:gamma_r=1.02:gamma_b=0.96,"
-            "fps=30"
+            "fps=30,"
+            "scale=in_range=full:out_range=tv:flags=accurate_rnd+full_chroma_int,"
+            "format=yuv420p"
         )
         af = (
             f"afade=t=in:st=0:d=0.05,"
@@ -142,6 +146,9 @@ def normalize_segment(cut: Cut, idx: int, dst: Path) -> None:
             "-vf", vf,
             "-af", af,
             "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+            "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1",
+            "-color_range", "tv", "-colorspace", "bt709",
+            "-color_primaries", "bt709", "-color_trc", "bt709",
             "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
             str(dst),
         ]
@@ -264,6 +271,7 @@ def add_music(video: Path, music: Path, music_start: float, output: Path) -> Non
         "-map", "0:v",
         "-map", "[aout]",
         "-c:v", "copy",
+        "-movflags", "+faststart",
         "-c:a", "aac", "-b:a", "192k",
         str(output),
     ]
