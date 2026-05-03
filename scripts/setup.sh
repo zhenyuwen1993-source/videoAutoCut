@@ -30,6 +30,21 @@ if [ ! -x "$PYBIN" ]; then
     exit 1
 fi
 
+# Guard: pyproject.toml requires-python = ">=3.11,<3.13", and PyTorch CUDA
+# wheels are only published for 3.10–3.12 today. If the existing venv was
+# made with a wrong Python (e.g. 3.13 / 3.14), torch install will fail
+# cryptically. Refuse to proceed and tell the user how to fix it.
+VENV_PY_VER="$("$PYBIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+case "$VENV_PY_VER" in
+    3.11|3.12) ;;
+    *)
+        echo "[setup] ERROR: $VENV uses Python $VENV_PY_VER but project requires 3.11 or 3.12." >&2
+        echo "[setup]        Delete the venv and re-run:  rm -rf $VENV && bash scripts/setup.sh" >&2
+        exit 1
+        ;;
+esac
+echo "[setup] venv Python: $VENV_PY_VER"
+
 # ---------- 2. pip + torch (CUDA 12.1) ----------
 echo "[setup] Upgrading pip..."
 "$PYBIN" -m pip install --upgrade pip wheel setuptools

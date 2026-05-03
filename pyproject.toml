@@ -14,6 +14,10 @@ authors = [
 ]
 keywords = ["video", "editing", "auto-cut", "clip", "highlight-detection"]
 
+# Core deps: stages that are implemented (or being implemented now).
+# Per invariant I-3 / ADR-0001 D-3, deps for stages still under design
+# live in optional extras until those stages have real code. This avoids
+# version-pin conflicts (e.g. audiocraft's torch==2.1.0 hard pin).
 dependencies = [
     # core video / IO
     "ffmpeg-python>=0.2.0",
@@ -30,7 +34,8 @@ dependencies = [
     "numba>=0.59",
     # shot segmentation
     "scenedetect[opencv]>=0.6.4",
-    # vision models
+    # vision models — torch installed separately via PyTorch CUDA index;
+    # pinned here so editable-install doesn't try to swap it for CPU torch.
     "torch>=2.2,<2.6",
     "torchvision>=0.17",
     "torchaudio>=2.2",
@@ -38,17 +43,12 @@ dependencies = [
     "transformers>=4.40",
     "huggingface_hub>=0.23",
     "safetensors>=0.4",
-    # voice
-    "silero-vad>=5.1",
-    "faster-whisper>=1.0.3",
-    "whisperx>=3.1.5",
-    "dashscope>=1.20",
-    "anthropic>=0.40",
-    # audio
+    # audio (used by beat-snap in assemble — already implemented in v3 demo)
     "librosa>=0.10",
     "soundfile>=0.12",
-    # music generation
-    "audiocraft>=1.3.0",
+    # rater fallback (small SDK, kept in core because also useful for
+    # general agent-side tooling)
+    "anthropic>=0.40",
     # misc
     "typing_extensions>=4.10",
 ]
@@ -58,6 +58,24 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.4",
     "mypy>=1.10",
+]
+# Voice branch — install with `pip install -e .[voice]` once src/voice/ exists.
+voice = [
+    "silero-vad>=5.1",
+    "faster-whisper>=1.0.3",
+    "whisperx>=3.1.5",
+    "dashscope>=1.20",
+]
+# Music generation branch — install with `pip install -e .[music]` once
+# src/assemble/ wires MusicGen in. NOTE: audiocraft 1.3.0 hard-pins
+# torch==2.1.0 which conflicts with our CUDA torch 2.5.x. Resolution
+# strategies (decide when this branch becomes real):
+#   1. Use audiocraft from git main (looser pins) instead of PyPI 1.3.0
+#   2. Swap to Stable Audio Open / ACE-Step (already noted in CLAUDE.md
+#      "Decisions to revisit later")
+#   3. Run MusicGen in a separate venv via subprocess
+music = [
+    "audiocraft>=1.3.0",
 ]
 
 [project.scripts]
