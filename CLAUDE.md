@@ -6,6 +6,29 @@ Auto-editor for MarchWen's travel footage. Output: short clips (30s–3min) for 
 
 Most input is **silent scenery** (no dialogue). Transcript-based pipelines (the autoclip/mli-autocut family) do NOT apply as the primary engine. Voice handling is a secondary branch, not the main path.
 
+## Invariants — read before editing
+
+Multiple Claude sessions (desktop + Dispatch) edit this repo in parallel. To stay coherent, the following invariants hold. Full rationale: [`docs/decisions/0001-architecture-invariants.md`](docs/decisions/0001-architecture-invariants.md).
+
+- **I-1. One source of truth per concern.** Deps → `pyproject.toml`. Tunables → `configs/default.yaml`. Prompts → `prompts/*.zh.txt`. Architecture → this file. Decisions → `docs/decisions/`. If a value lives in two places, one is wrong.
+- **I-2. One CLIP, two granularities.** `Chinese-CLIP ViT-L/14` is the only CLIP. Used at file-level (trip indexer) and shot-level (semantic scorer). Don't fork the model "for speed" — tune at the model layer.
+- **I-3. Demo scripts are throwaway.** `cut_demo*.py` will be deleted once `src/assemble/` drives from EDL+config. Don't add `cut_demo_v4.py`. Improve the pipeline; new params go in configs.
+- **I-4. Models are project-local.** Weights live in `models/` (gitignored), bootstrapped by `scripts/preload_models.sh`. No `~/.cache/huggingface/`.
+- **I-5. Output is yuv420p tv-range bt709 H.264 high@4.1.** Changing pixel format requires a config update AND a one-frame compatibility check.
+- **I-6. Permissions deliberate.** `.claude/settings.local.json` either uses `bypassPermissions` mode, or has a curated commented allow list. No 50-rule auto-accumulation.
+- **I-7. Memory hierarchy.** Global memory = user/project pointer. `CLAUDE.md` = architecture+decisions+invariants. ADRs = deep rationale. Don't mix layers.
+
+**Drift checks** before every commit (run from project root, drift-check exclusions skip the rule definitions themselves):
+```bash
+EXCL=( ':!CLAUDE.md' ':!docs/decisions/' )
+! git grep -n "requirements-clip" -- "${EXCL[@]}"
+! git grep -nE "ViT-B-32|open_clip ViT-B" -- "${EXCL[@]}"
+.venv/Scripts/python -c "import yaml; yaml.safe_load(open('configs/default.yaml'))"
+for f in scripts/*.sh; do bash -n "$f"; done
+```
+
+How to make changes: see ADR-0001 § "How to make changes safely".
+
 ## Pipeline
 
 ```
